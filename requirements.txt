@@ -1,0 +1,6 @@
+Faker==27.0.0
+kafka-python==2.0.2
+python-dateutil==2.9.0.post0
+pytz==2024.1
+simplejson==3.19.3
+six==1.16.0

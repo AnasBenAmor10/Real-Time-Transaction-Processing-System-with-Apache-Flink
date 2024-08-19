@@ -1,0 +1,124 @@
+version: '3.8'
+services:
+  zookeeper:
+    image: docker.io/bitnami/zookeeper:3.8
+    restart: always
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo 'ruok' | nc localhost 2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    container_name: Kafka_Broker
+    restart: always
+    image: docker.io/bitnami/kafka:3.3
+    ports:
+      # - "9092:9092" # Commented out, can be uncommented if needed
+      - "9093:9093"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181 # Remove quotes around `zookeeper:2181`
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "-c", "nc -z localhost 9093"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:latest
+    container_name: Postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres # Fixed spacing around colon
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_db:/var/lib/postgresql/data
+
+  elasticsearch:
+    container_name: elasticsearch
+    image: bitnami/elasticsearch:8.8.2
+    environment:
+      - cluster.name=kafka-cluster
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    stdin_open: true
+    tty: true
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "50"
+    healthcheck:
+      test: ["CMD", "curl", "-u", "elastic:elastic", "-s", "-f", "http://elasticsearch-cntr:9200/_cat/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  kibana:
+    container_name: kibana
+    image: bitnami/kibana:8.8.2
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    stdin_open: true
+    tty: true
+    restart: always
+    links:
+      - elasticsearch
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "50"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://kibana-cntr:5601"]
+      interval: 30s
+      retries: 3
+      timeout: 10s
+
+volumes:
+  postgres_db:
+    driver: local
+
+  elasticsearch_data:
+    driver: local
