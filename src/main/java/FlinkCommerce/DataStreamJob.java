@@ -46,7 +46,9 @@ public class DataStreamJob {
 
 		DataStream<Transaction> transactionStream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka source");
 		transactionStream.print();
+
+
 		// Execute program, beginning computation.
-		env.execute("Flink Java API Skeleton");
+		env.execute("Flink Ecommerce Realtime Streaming");
 	}
 }
