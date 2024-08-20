@@ -1,5 +1,4 @@
 from faker import Faker
-# from kafka import KafkaProducer
 import random
 from datetime import datetime
 import pytz

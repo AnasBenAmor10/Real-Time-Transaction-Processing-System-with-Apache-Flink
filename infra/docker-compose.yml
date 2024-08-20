@@ -38,6 +38,37 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  
+  jobmanager:
+      image: pyflink/pyflink:1.16.3-scala_2.12
+      build: 
+        context: .
+        dockerfile: flink/dockerfile.flink
+      container_name: jobmanager
+      hostname: "jobmanager"
+      volumes: 
+         -.:/opt/pyflink-kafka-stream
+      expose: 
+         - "6123"
+      port: 
+        -"8081:8081"
+      command: jobmanager
+      environment:
+        - JOB_MANAGER_RPC_ADDRESS=jobmanager
+  taskmanager:
+    image: pyflink/pyflink:1.16.3-scala_2.12
+    container_name: taskmanager
+    volumes:
+      -.:/opt/pyflink-kafka-stream
+    expose:
+      - "6121"
+      - "6122"
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=jobmanager
+
 
   postgres:
     image: postgres:latest

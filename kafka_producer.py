@@ -12,20 +12,26 @@ producer = KafkaProducer(
 )
 
 curr_time = datetime.now()
-while (datetime.now() - curr_time).seconds < 120:
-    try:
-        transaction = generate_sales_transactions()
-        transaction['totalAmount'] = transaction['productPrice'] * transaction['productQuantity']
-        
-        print(transaction)
-        
-        # Send the transaction to Kafka
-        producer.send(transaction_topic, value=transaction, key=transaction["transactionId"].encode('utf-8'))
-        
-        time.sleep(1)
-        
-    except BufferError:
-        print("Buffer full, waiting...")
-        time.sleep(1)
-    except Exception as e:
-        print(e)
+
+try:
+    while (datetime.now() - curr_time).seconds < 120:
+        try:
+            transaction = generate_sales_transactions()
+            transaction['totalAmount'] = transaction['productPrice'] * transaction['productQuantity']
+            
+            print(transaction)
+            
+            # Send the transaction to Kafka
+            producer.send(transaction_topic, value=transaction, key=transaction["transactionId"].encode('utf-8'))
+            # Wait one second before sending the next transaction
+            time.sleep(1)
+            
+        except BufferError:
+            print("Buffer full, waiting...")
+            time.sleep(1)
+        except Exception as e:
+            print(e)
+finally:
+    # Ensure all messages are sent before exiting
+    producer.flush()
+    producer.close()
