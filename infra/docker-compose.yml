@@ -4,9 +4,9 @@ services:
     image: docker.io/bitnami/zookeeper:3.8
     restart: always
     hostname: zookeeper
-    container_name: zookeeper
+    container_name: Zookeeper
     ports:
-      - "2181:2181"
+      - "2180:2181"
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
     healthcheck:
@@ -16,7 +16,7 @@ services:
       retries: 5
 
   kafka:
-    container_name: Kafka_Broker
+    container_name: KafkaBroker
     restart: always
     image: docker.io/bitnami/kafka:3.3
     ports:
@@ -39,36 +39,7 @@ services:
       timeout: 5s
       retries: 5
   
-  jobmanager:
-      image: pyflink/pyflink:1.16.3-scala_2.12
-      build: 
-        context: .
-        dockerfile: flink/dockerfile.flink
-      container_name: jobmanager
-      hostname: "jobmanager"
-      volumes: 
-         -.:/opt/pyflink-kafka-stream
-      expose: 
-         - "6123"
-      port: 
-        -"8081:8081"
-      command: jobmanager
-      environment:
-        - JOB_MANAGER_RPC_ADDRESS=jobmanager
-  taskmanager:
-    image: pyflink/pyflink:1.16.3-scala_2.12
-    container_name: taskmanager
-    volumes:
-      -.:/opt/pyflink-kafka-stream
-    expose:
-      - "6121"
-      - "6122"
-    depends_on:
-      - jobmanager
-    command: taskmanager
-    environment:
-      - JOB_MANAGER_RPC_ADDRESS=jobmanager
-
+  
 
   postgres:
     image: postgres:latest
@@ -85,11 +56,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    volumes:
-      - postgres_db:/var/lib/postgresql/data
 
   elasticsearch:
-    container_name: elasticsearch
+    container_name: Elasticsearch
     image: bitnami/elasticsearch:8.8.2
     environment:
       - cluster.name=kafka-cluster
@@ -121,7 +90,7 @@ services:
       retries: 5
 
   kibana:
-    container_name: kibana
+    container_name: Kibana
     image: bitnami/kibana:8.8.2
     ulimits:
       memlock:
@@ -148,8 +117,5 @@ services:
       timeout: 10s
 
 volumes:
-  postgres_db:
-    driver: local
-
   elasticsearch_data:
     driver: local
